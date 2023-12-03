@@ -1,24 +1,9 @@
 public class AdderReservationStation extends ReservationStation{
-    private int iAddCycles;
-    private int iSubCycles;
+    private static int count=1;
 
     public AdderReservationStation(){
         super();
+        this.setTag("A" + count++);
     }
 
-    public int getAddCycles() {
-        return iAddCycles;
-    }
-
-    public void setAddCycles(int iAddCycles) {
-        this.iAddCycles = iAddCycles;
-    }
-
-    public int getSubCycles() {
-        return iSubCycles;
-    }
-
-    public void setSubCycles(int iSubCycles) {
-        this.iSubCycles = iSubCycles;
-    }
 }

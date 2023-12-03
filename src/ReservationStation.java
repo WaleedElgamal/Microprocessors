@@ -1,23 +1,24 @@
 public class ReservationStation {
-    private int iTag;
+    private String iTag;
     private boolean bBusy;
     private String strOpcode;
     private int iSourceValue1;
     private int iSourceValue2;
-    private int iSourceReg1;
-    private int iSourceReg2;
+    private String iSourceReg1; //Qi
+    private String iSourceReg2;  //Qj
     private int iMemoryAddress;
-    private int iCycle;
+    private int iStartCycle;
+    private int iTotalCycles;
 
     public ReservationStation(){
         bBusy=false;
     }
 
-    public int getTag() {
+    public String getTag() {
         return iTag;
     }
 
-    public void setTag(int iTag) {
+    public void setTag(String iTag) {
         this.iTag = iTag;
     }
 
@@ -53,19 +54,19 @@ public class ReservationStation {
         this.iSourceValue2 = iSourceValue2;
     }
 
-    public int getSourceReg1() {
+    public String getSourceReg1() {
         return iSourceReg1;
     }
 
-    public void setSourceReg1(int iSourceReg1) {
+    public void setSourceReg1(String iSourceReg1) {
         this.iSourceReg1 = iSourceReg1;
     }
 
-    public int getSourceReg2() {
+    public String getSourceReg2() {
         return iSourceReg2;
     }
 
-    public void setSourceReg2(int iSourceReg2) {
+    public void setSourceReg2(String iSourceReg2) {
         this.iSourceReg2 = iSourceReg2;
     }
 
@@ -77,11 +78,19 @@ public class ReservationStation {
         this.iMemoryAddress = iMemoryAddress;
     }
 
-    public int getCycle() {
-        return iCycle;
+    public int getStartCycle() {
+        return iStartCycle;
     }
 
-    public void setCycle(int iCycle) {
-        this.iCycle = iCycle;
+    public void setStartCycle(int iStartCycle) {
+        this.iStartCycle = iStartCycle;
+    }
+
+    public int getTotalCycles() {
+        return iTotalCycles;
+    }
+
+    public void setTotalCycles(int iTotalCycles) {
+        this.iTotalCycles = iTotalCycles;
     }
 }

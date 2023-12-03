@@ -1,17 +1,17 @@
 public class Register {
     private int iReg;
-    private int iSourceReg; //Q
+    private String iSourceReg; //Q
     private int iValue;
     public Register(int iReg, int iValue){
         this.iReg = iReg;
         this.iValue = iValue;
     }
 
-    public int getSourceReg() {
+    public String getSourceReg() {
         return iSourceReg;
     }
 
-    public void setSourceReg(int iSourceReg) {
+    public void setSourceReg(String iSourceReg) {
         this.iSourceReg = iSourceReg;
     }
 
