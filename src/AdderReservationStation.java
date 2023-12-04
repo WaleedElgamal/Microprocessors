@@ -5,6 +5,5 @@ public class AdderReservationStation extends ReservationStation{
         super();
         this.setTag("A" + count++);
     }
-    
 
 }
