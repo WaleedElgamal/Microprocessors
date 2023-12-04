@@ -234,12 +234,110 @@ public class Main {
 
         return canIssue;
     }
-    private static void HandleLoadBuffers(Main Tomasulo) {
+    
+    private static void HandleAdderStations(Main Tomasulo) {
+        for (int i = 0; i < Tomasulo.AdderReservationStations.length; i++) {
+            AdderReservationStation curStation = Tomasulo.AdderReservationStations[i];
+            if (curStation.isBusy()) {
+                if (curStation.getSourceReg1().equals("") && curStation.getSourceReg2().equals("")) {
+                    curStation.setTotalCycles(curStation.getTotalCycles() - 1);
+                    if (curStation.getTotalCycles() == 0) {
+                        int result = 0;
+                        if (curStation.getOpcode().equals("ADD.D")) {
+                            result = curStation.getSourceValue1() + curStation.getSourceValue2();
+                        } else if (curStation.getOpcode().equals("SUB.D")) {
+                            result = curStation.getSourceValue1() - curStation.getSourceValue2();
+                        }
+                        for (int j = 0; j < Tomasulo.RegisterFile.length; j++){
+                            if (Tomasulo.RegisterFile[j].getSourceReg().equals(curStation.getTag())) {
+                                Tomasulo.RegisterFile[j].setSourceReg("");
+                                Tomasulo.RegisterFile[j].setValue(result);
+                            }
+                        };
+                        for (int j = 0; j < Tomasulo.AdderReservationStations.length; j++) {
+                            if (Tomasulo.AdderReservationStations[j].getSourceReg1().equals(curStation.getTag())) {
+                                Tomasulo.AdderReservationStations[j].setSourceValue1(result);
+                                Tomasulo.AdderReservationStations[j].setSourceReg1("");
+                            }
+                            if (Tomasulo.AdderReservationStations[j].getSourceReg2().equals(curStation.getTag())) {
+                                Tomasulo.AdderReservationStations[j].setSourceValue2(result);
+                                Tomasulo.AdderReservationStations[j].setSourceReg2("");
+                            }
+                        }
+                        for (int j = 0; j < Tomasulo.MultiplierReservationStations.length; j++) {
+                            if (Tomasulo.MultiplierReservationStations[j].getSourceReg1().equals(curStation.getTag())) {
+                                Tomasulo.MultiplierReservationStations[j].setSourceValue1(result);
+                                Tomasulo.MultiplierReservationStations[j].setSourceReg1("");
+                            }
+                            if (Tomasulo.MultiplierReservationStations[j].getSourceReg2().equals(curStation.getTag())) {
+                                Tomasulo.MultiplierReservationStations[j].setSourceValue2(result);
+                                Tomasulo.MultiplierReservationStations[j].setSourceReg2("");
+                            }
+                        }
+                        curStation.setBusy(false);
+                        curStation.setSourceValue1(0);
+                        curStation.setSourceValue2(0);
+                        curStation.setSourceReg1("");
+                        curStation.setSourceReg2("");
+                    }
+                }
+            }
+        }
     }
 
     private static void HanldeMultiplierStations(Main Tomasulo) {
+        for (int i = 0; i < Tomasulo.MultiplierReservationStations.length; i++) {
+            MultiplierReservationStation curStation = Tomasulo.MultiplierReservationStations[i];
+            if (curStation.isBusy()) {
+                if (curStation.getSourceReg1().equals("") && curStation.getSourceReg2().equals("")) {
+                    curStation.setTotalCycles(curStation.getTotalCycles() - 1);
+                    if (curStation.getTotalCycles() == 0) {
+                        int result = 0;
+                        if (curStation.getOpcode().equals("MUL.D")) {
+                            result = curStation.getSourceValue1() * curStation.getSourceValue2();
+                        } else if (curStation.getOpcode().equals("DIV.D")) {
+                            result = curStation.getSourceValue1() / curStation.getSourceValue2();
+                        }
+                        for (int j = 0; j < Tomasulo.RegisterFile.length; j++) {
+                            if (Tomasulo.RegisterFile[j].getSourceReg().equals(curStation.getTag())) {
+                                Tomasulo.RegisterFile[j].setSourceReg("");
+                                Tomasulo.RegisterFile[j].setValue(result);
+                            }
+                        }
+                        ;
+                        for (int j = 0; j < Tomasulo.AdderReservationStations.length; j++) {
+                            if (Tomasulo.AdderReservationStations[j].getSourceReg1().equals(curStation.getTag())) {
+                                Tomasulo.AdderReservationStations[j].setSourceValue1(result);
+                                Tomasulo.AdderReservationStations[j].setSourceReg1("");
+                            }
+                            if (Tomasulo.AdderReservationStations[j].getSourceReg2().equals(curStation.getTag())) {
+                                Tomasulo.AdderReservationStations[j].setSourceValue2(result);
+                                Tomasulo.AdderReservationStations[j].setSourceReg2("");
+                            }
+                        }
+                        for (int j = 0; j < Tomasulo.MultiplierReservationStations.length; j++) {
+                            if (Tomasulo.MultiplierReservationStations[j].getSourceReg1().equals(curStation.getTag())) {
+                                Tomasulo.MultiplierReservationStations[j].setSourceValue1(result);
+                                Tomasulo.MultiplierReservationStations[j].setSourceReg1("");
+                            }
+                            if (Tomasulo.MultiplierReservationStations[j].getSourceReg2().equals(curStation.getTag())) {
+                                Tomasulo.MultiplierReservationStations[j].setSourceValue2(result);
+                                Tomasulo.MultiplierReservationStations[j].setSourceReg2("");
+                            }
+                        }
+                        curStation.setBusy(false);
+                        curStation.setSourceValue1(0);
+                        curStation.setSourceValue2(0);
+                        curStation.setSourceReg1("");
+                        curStation.setSourceReg2("");
+                    }
+                }
+            }
+        }
     }
 
-    private static void HandleAdderStations(Main Tomasulo) {
+    private static void HandleLoadBuffers(Main Tomasulo) {
+
     }
+    
 }
