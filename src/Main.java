@@ -10,6 +10,7 @@ public class Main {
     private Register[] RegisterFile;
     private int[] Cache;
     private LoadBuffer[] LoadBuffers;
+    private StoreBuffer[] StoreBuffers;
     private HashMap<String, Integer> hmInstructionCycles = new HashMap<>();
 
     public Main(){
@@ -111,6 +112,18 @@ public class Main {
         }
 
         //--------------------------------------------------------------------------------------------------
+        System.out.println("Choose the number of store buffer");
+        int iNumStoreBuffers = sc.nextInt();
+
+        Tomasulo.StoreBuffers = new StoreBuffer[iNumStoreBuffers];
+        for (int i = 0; i < iNumStoreBuffers; i++) {
+            Tomasulo.StoreBuffers[i] = new StoreBuffer();
+        }
+
+        //--------------------------------------------------------------------------------------------------
+
+
+
 
         for (String strInstruction : Tomasulo.hmInstructionCycles.keySet()) {
             if (!strInstruction.equals("DADDI") && !strInstruction.equals("BNEZ")) {
@@ -125,20 +138,25 @@ public class Main {
         int iClockCycle = 1;
         while(iClockCycle<100){ //change later   !Program.isEmpty()
             Instruction curInstruction = Program.poll();
-            IssueInstruction(curInstruction, Tomasulo);
+           boolean canIssue = IssueInstruction(curInstruction, Tomasulo);
             HandleAdderStations(Tomasulo);
             HanldeMultiplierStations(Tomasulo);
             HandleLoadBuffers(Tomasulo);
         }
     }
 
-    private static void IssueInstruction(Instruction curInstruction, Main Tomasulo){
-        if(curInstruction.getType().equals("ADD.D")){
+
+
+
+    private static boolean IssueInstruction(Instruction curInstruction, Main Tomasulo){
+        boolean canIssue = false;
+        if(curInstruction.getType().equals("ADD.D") || curInstruction.getType().equals("SUB.D")){
             for(int i=0; i<Tomasulo.AdderReservationStations.length; i++){
                 AdderReservationStation curStation = Tomasulo.AdderReservationStations[i];
                 if(!curStation.isBusy()){
+                    canIssue = true;
                     curStation.setBusy(true);
-                    curStation.setOpcode("ADD.D");
+                    curStation.setOpcode(curInstruction.getType());
                     int iRegister1 = curInstruction.getSourceRegister1();
                     int iRegister2 = curInstruction.getSourceRegister2();
                     if(Tomasulo.RegisterFile[iRegister1].getSourceReg().equals("")){
@@ -153,10 +171,68 @@ public class Main {
                     else{
                         curStation.setSourceReg1(Tomasulo.RegisterFile[iRegister2].getSourceReg());
                     }
-                    curStation.setTotalCycles(Tomasulo.hmInstructionCycles.get("ADD.D"));
+                    curStation.setTotalCycles(Tomasulo.hmInstructionCycles.get(curInstruction.getType()));
                 }
             }
         }
+        if(curInstruction.getType().equals("MUL.D") || curInstruction.getType().equals("DIV.D")){
+            for(int i=0; i<Tomasulo.MultiplierReservationStations.length; i++){
+                MultiplierReservationStation curStation = Tomasulo.MultiplierReservationStations[i];
+                if(!curStation.isBusy()){
+                    canIssue = true;
+                    curStation.setBusy(true);
+                    curStation.setOpcode(curInstruction.getType());
+                    int iRegister1 = curInstruction.getSourceRegister1();
+                    int iRegister2 = curInstruction.getSourceRegister2();
+                    if(Tomasulo.RegisterFile[iRegister1].getSourceReg().equals("")){
+                        curStation.setSourceValue1(Tomasulo.RegisterFile[iRegister1].getValue());
+                    }
+                    else{
+                        curStation.setSourceReg1(Tomasulo.RegisterFile[iRegister1].getSourceReg());
+                    }
+                    if(Tomasulo.RegisterFile[iRegister2].getSourceReg().equals("")){
+                        curStation.setSourceValue1(Tomasulo.RegisterFile[iRegister2].getValue());
+                    }
+                    else{
+                        curStation.setSourceReg1(Tomasulo.RegisterFile[iRegister2].getSourceReg());
+                    }
+                    curStation.setTotalCycles(Tomasulo.hmInstructionCycles.get(curInstruction.getType()));
+                }
+            }
+        }
+        if (curInstruction.getType().equals("L.D")){
+            for(int i=0; i<Tomasulo.LoadBuffers.length; i++){
+                LoadBuffer curBuffer = Tomasulo.LoadBuffers[i];
+                if(!curBuffer.isBusy()){
+                    canIssue = true;
+                    curBuffer.setBusy(true);
+                    curBuffer.setAddress(curInstruction.getImmediateValue());
+                    curBuffer.setTotalCycles(Tomasulo.hmInstructionCycles.get(curInstruction.getType()));
+                }
+            }
+        }
+        if (curInstruction.getType().equals("S.D")){
+            for(int i=0; i<Tomasulo.StoreBuffers.length; i++){
+                StoreBuffer curBuffer = Tomasulo.StoreBuffers[i];
+                if(!curBuffer.isBusy()){
+                    canIssue = true;
+                    curBuffer.setBusy(true);
+                    curBuffer.setAddress(curInstruction.getImmediateValue());
+                    int iRegister1 = curInstruction.getSourceRegister1();
+                    if (Tomasulo.RegisterFile[iRegister1].getSourceReg().equals("")){
+                        curBuffer.setSourceValue(Tomasulo.RegisterFile[iRegister1].getValue());
+                    }
+                    else{
+                        curBuffer.setSourceReg(Tomasulo.RegisterFile[iRegister1].getSourceReg());
+                    }
+                    curBuffer.setTotalCycles(Tomasulo.hmInstructionCycles.get(curInstruction.getType()));
+                }
+            }
+        }
+        // todo still need to handle DADDI ,DSUBI  and BNEZ after knowing their RS
+
+
+        return canIssue;
     }
     private static void HandleLoadBuffers(Main Tomasulo) {
     }

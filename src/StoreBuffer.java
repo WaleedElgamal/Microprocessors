@@ -1,17 +1,20 @@
-public class LoadBuffer {
+public class StoreBuffer {
     private String iTag;
     private boolean bBusy;
     private int iAddress;
 
-    private static int count=1;
+    private int iSourceValue;
+
+    private String iSourceReg;
+
+    private static int count = 1;
+
 
     private int iTotalCycles;
 
-
-
-    public LoadBuffer() {
-        bBusy=false;
-        iTag = "L" + count++;
+    public StoreBuffer() {
+        bBusy = false;
+        iTag = "S" + count++;
     }
 
     public String getTag() {
@@ -38,9 +41,26 @@ public class LoadBuffer {
         this.iAddress = iAddress;
     }
 
+    public int getSourceValue() {
+        return iSourceValue;
+    }
+
+    public void setSourceValue(int iSourceValue) {
+        this.iSourceValue = iSourceValue;
+    }
+
+    public String getSourceReg() {
+        return iSourceReg;
+    }
+
+    public void setSourceReg(String iSourceReg) {
+        this.iSourceReg = iSourceReg;
+    }
+
     public int getTotalCycles() {
         return iTotalCycles;
     }
+
     public void setTotalCycles(int iTotalCycles) {
         this.iTotalCycles = iTotalCycles;
     }

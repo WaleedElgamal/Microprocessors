@@ -2,10 +2,10 @@ public class ReservationStation {
     private String iTag;
     private boolean bBusy;
     private String strOpcode;
-    private int iSourceValue1;
-    private int iSourceValue2;
-    private String iSourceReg1; //Qi
-    private String iSourceReg2;  //Qj
+    private int iSourceValue1; // Vj
+    private int iSourceValue2;// Vk
+    private String iSourceReg1; //Qj
+    private String iSourceReg2;  //Qk
     private int iMemoryAddress;
     private int iStartCycle;
     private int iTotalCycles;
