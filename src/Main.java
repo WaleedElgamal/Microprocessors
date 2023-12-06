@@ -236,6 +236,7 @@ public class Main {
                     canIssue = true;
                     curStation.setBusy(true);
                     curStation.setOpcode(curInstruction.getType());
+                    
                     int iRegister1 = curInstruction.getSourceRegister1();
                     if(Tomasulo.RegisterFile[iRegister1].getSourceReg().equals("")){
                         curStation.setSourceValue1(Tomasulo.RegisterFile[iRegister1].getValue());
