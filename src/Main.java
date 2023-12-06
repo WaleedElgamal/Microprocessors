@@ -229,7 +229,28 @@ public class Main {
                 }
             }
         }
-        // todo still need to handle DADDI ,DSUBI  and BNEZ after knowing their RS
+        
+        if (curInstruction.getType().equals("DADDI") || curInstruction.getType().equals("DSUBI") || curInstruction.getType().equals("BNEZ")){
+            for(int i=0; i<Tomasulo.AdderReservationStations.length; i++){
+                AdderReservationStation curStation = Tomasulo.AdderReservationStations[i];
+                if(!curStation.isBusy()){
+                    canIssue = true;
+                    curStation.setBusy(true);
+                    curStation.setOpcode(curInstruction.getType());
+                    int iRegister1 = curInstruction.getSourceRegister1();
+                    if(Tomasulo.RegisterFile[iRegister1].getSourceReg().equals("")){
+                        curStation.setSourceValue1(Tomasulo.RegisterFile[iRegister1].getValue());
+                    }
+                    else{
+                        curStation.setSourceReg1(Tomasulo.RegisterFile[iRegister1].getSourceReg());
+                    }
+                    curStation.setSourceValue2(curInstruction.getImmediateValue());
+                    curStation.setTotalCycles(Tomasulo.hmInstructionCycles.get(curInstruction.getType()));
+                }
+            }
+        }
+
+
 
 
         return canIssue;
