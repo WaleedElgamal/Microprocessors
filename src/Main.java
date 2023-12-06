@@ -138,7 +138,7 @@ public class Main {
         int iClockCycle = 1;
         while(iClockCycle<100){ //change later   !Program.isEmpty()
             Instruction curInstruction = Program.poll();
-            boolean canIssue = IssueInstruction(curInstruction, Tomasulo);
+           boolean canIssue = IssueInstruction(curInstruction, Tomasulo);
             HandleAdderStations(Tomasulo);
             HanldeMultiplierStations(Tomasulo);
             HandleLoadBuffers(Tomasulo);
@@ -229,31 +229,12 @@ public class Main {
                 }
             }
         }
-        if (curInstruction.getType().equals("DADDI") || curInstruction.getType().equals("DSUBI") || curInstruction.getType().equals("BNEZ")){
-            for(int i=0; i<Tomasulo.AdderReservationStations.length; i++){
-                AdderReservationStation curStation = Tomasulo.AdderReservationStations[i];
-                if(!curStation.isBusy()){
-                    canIssue = true;
-                    curStation.setBusy(true);
-                    curStation.setOpcode(curInstruction.getType());
-                    int iRegister1 = curInstruction.getSourceRegister1();
-                    if(Tomasulo.RegisterFile[iRegister1].getSourceReg().equals("")){
-                        curStation.setSourceValue1(Tomasulo.RegisterFile[iRegister1].getValue());
-                    }
-                    else{
-                        curStation.setSourceReg1(Tomasulo.RegisterFile[iRegister1].getSourceReg());
-                    }
-                    curStation.setSourceValue2(curInstruction.getImmediateValue());
-                    curStation.setTotalCycles(Tomasulo.hmInstructionCycles.get(curInstruction.getType()));
-                }
-            }
-        }
+        // todo still need to handle DADDI ,DSUBI  and BNEZ after knowing their RS
 
 
         return canIssue;
     }
-
-
+    
     private static void HandleAdderStations(Main Tomasulo) {
         for (int i = 0; i < Tomasulo.AdderReservationStations.length; i++) {
             AdderReservationStation curStation = Tomasulo.AdderReservationStations[i];
@@ -356,8 +337,7 @@ public class Main {
     }
 
     private static void HandleLoadBuffers(Main Tomasulo) {
-        
 
     }
-
+    
 }
