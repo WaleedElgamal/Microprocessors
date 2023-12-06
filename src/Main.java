@@ -356,6 +356,7 @@ public class Main {
     }
 
     private static void HandleLoadBuffers(Main Tomasulo) {
+        
 
     }
 
