@@ -9,12 +9,18 @@ public class StoreBuffer {
 
     private static int count = 1;
 
-
+    private int iStartCycle;
     private int iTotalCycles;
+
+    private int iInstructionIndex;
 
     public StoreBuffer() {
         bBusy = false;
         iTag = "S" + count++;
+    }
+
+    public String toString(){
+        return iTag + " " + bBusy + "  " + iAddress;
     }
 
     public String getTag() {
@@ -57,11 +63,27 @@ public class StoreBuffer {
         this.iSourceReg = iSourceReg;
     }
 
+    public int getStartCycle() {
+        return iStartCycle;
+    }
+
+    public void setStartCycle(int iStartCycle) {
+        this.iStartCycle = iStartCycle;
+    }
+
     public int getTotalCycles() {
         return iTotalCycles;
     }
 
     public void setTotalCycles(int iTotalCycles) {
         this.iTotalCycles = iTotalCycles;
+    }
+
+    public int getInstructionIndex() {
+        return iInstructionIndex;
+    }
+
+    public void setInstructionIndex(int iInstructionIndex) {
+        this.iInstructionIndex = iInstructionIndex;
     }
 }

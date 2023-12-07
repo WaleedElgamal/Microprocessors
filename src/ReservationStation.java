@@ -10,8 +10,16 @@ public class ReservationStation {
     private int iStartCycle;
     private int iTotalCycles;
 
+    private int iInstructionIndex;
+
+    private int iTime;
+
     public ReservationStation(){
         bBusy=false;
+        iTag="";
+        strOpcode="";
+        iSourceReg1="";
+        iSourceReg2="";
     }
 
     public String getTag() {
@@ -92,5 +100,21 @@ public class ReservationStation {
 
     public void setTotalCycles(int iTotalCycles) {
         this.iTotalCycles = iTotalCycles;
+    }
+
+    public int getTime() {
+        return iTime;
+    }
+
+    public void setTime(int iTime) {
+        this.iTime = iTime;
+    }
+
+    public int getInstructionIndex() {
+        return iInstructionIndex;
+    }
+
+    public void setInstructionIndex(int iInstructionIndex) {
+        this.iInstructionIndex = iInstructionIndex;
     }
 }

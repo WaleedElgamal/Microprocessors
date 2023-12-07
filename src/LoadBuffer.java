@@ -5,14 +5,20 @@ public class LoadBuffer {
 
     private static int count=1;
 
+    private int iStartCycle;
     private int iTotalCycles;
 
-
+    private int iInstructionIndex;
 
     public LoadBuffer() {
         bBusy=false;
         iTag = "L" + count++;
     }
+
+    public String toString(){
+        return iTag + " " + bBusy + "  " + iAddress;
+    }
+
 
     public String getTag() {
         return iTag;
@@ -38,10 +44,25 @@ public class LoadBuffer {
         this.iAddress = iAddress;
     }
 
+    public int getStartCycle() {
+        return iStartCycle;
+    }
+
+    public void setStartCycle(int iStartCycle) {
+        this.iStartCycle = iStartCycle;
+    }
     public int getTotalCycles() {
         return iTotalCycles;
     }
     public void setTotalCycles(int iTotalCycles) {
         this.iTotalCycles = iTotalCycles;
+    }
+
+    public int getInstructionIndex() {
+        return iInstructionIndex;
+    }
+
+    public void setInstructionIndex(int iInstructionIndex) {
+        this.iInstructionIndex = iInstructionIndex;
     }
 }

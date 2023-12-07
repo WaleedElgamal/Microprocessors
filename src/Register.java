@@ -5,6 +5,16 @@ public class Register {
     public Register(int iReg, int iValue){
         this.iReg = iReg;
         this.iValue = iValue;
+        this.iSourceReg = "";
+    }
+
+    public String toString(){
+        String str = "F" + iReg;
+        if (iSourceReg.equals(""))
+            str += " " + iValue;
+        else
+            str += " " + iSourceReg;
+        return str;
     }
 
     public String getSourceReg() {

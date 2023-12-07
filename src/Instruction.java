@@ -8,6 +8,45 @@ public class Instruction {
     public Instruction(){
 
     }
+    public Instruction(String type, int dest, int source1, int source2){
+        strType = type;
+        iDestinationRegister = dest;
+        iSourceRegister1 = source1;
+        iSourceRegister2 = source2;
+
+        //in case it is DADDI or DSUBI, source2 will be the immediate value
+        iImmediateValue = source2;
+    }
+
+    public Instruction(String type, int dest, int immediate){
+        strType = type;
+        iDestinationRegister = dest;
+        iImmediateValue = immediate;
+    }
+
+
+    public String toString(){
+        String res =  strType +" ";
+        char register;
+        if (strType.equals("DADDI") || strType.equals("DSUBI")){
+            register = 'R';
+            res += register +  "" + iDestinationRegister + " " +
+                    register + iSourceRegister1 + " " +
+                    iImmediateValue;
+        }
+        else if (strType.equals("BNEZ")){
+            register = 'R';
+            res += register + "" +iDestinationRegister + " " +
+                    iImmediateValue;
+        }
+        else{
+            register='F';
+            res += register + ""  +iDestinationRegister + " " +
+                    register + iSourceRegister1 + " " +
+                    register + iSourceRegister2;
+        }
+        return res;
+    }
 
     public String getType() {
         return strType;
