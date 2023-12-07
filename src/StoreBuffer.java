@@ -3,9 +3,9 @@ public class StoreBuffer {
     private boolean bBusy;
     private int iAddress;
 
-    private int iSourceValue;
+    private double iSourceValue; // V
 
-    private String iSourceReg;
+    private String iSourceReg; //Q
 
     private static int count = 1;
 
@@ -47,11 +47,11 @@ public class StoreBuffer {
         this.iAddress = iAddress;
     }
 
-    public int getSourceValue() {
+    public double getSourceValue() {
         return iSourceValue;
     }
 
-    public void setSourceValue(int iSourceValue) {
+    public void setSourceValue(double iSourceValue) {
         this.iSourceValue = iSourceValue;
     }
 

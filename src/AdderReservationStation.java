@@ -12,8 +12,8 @@ public class AdderReservationStation extends ReservationStation{
             return str;
         }
         str += getOpcode() + "   ";
-        int val1 = getSourceValue1();
-        int val2 = getSourceValue2();
+        double val1 = getSourceValue1();
+        double val2 = getSourceValue2();
         str += val1 + "     " + val2 + "     " + getSourceReg1() + "    " + getSourceReg2() +  "    " + getMemoryAddress();
         return str;
     }

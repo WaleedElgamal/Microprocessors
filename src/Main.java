@@ -2,23 +2,21 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.math.BigInteger;
 import java.util.*;
 public class Main {
-    private AdderReservationStation[] AdderReservationStations;
-    private MultiplierReservationStation[] MultiplierReservationStations;
-    private Register[] RegisterFile;
-    private int[] Cache;
-    private LoadBuffer[] LoadBuffers;
-    private StoreBuffer[] StoreBuffers;
+    private  AdderReservationStation[] AdderReservationStations;
+    private  MultiplierReservationStation[] MultiplierReservationStations;
+    private  Register[] RegisterFile;
+    private  double[] Cache;
+    private  LoadBuffer[] LoadBuffers;
+    private static StoreBuffer[] StoreBuffers;
     private HashMap<String, Integer> hmInstructionCycles = new HashMap<>();
 
     static int iClockCycle = 1;
     private Queue<String> WriteResult = new LinkedList<>();
 
-    //todo add load and store in write result
     public Main(){
-        Cache = new int[10]; //any size and also load with any values
+        Cache = new double[10]; //any size and also load with any values
         RegisterFile = new Register[10];
         for(int i=0; i<10; i++){
             RegisterFile[i] = new Register(i, i);
@@ -79,7 +77,7 @@ public class Main {
         Main Tomasulo = new Main();
         ArrayList<Instruction> Program = new ArrayList<>();
         ParseProgram(Program);
-        HashSet<Integer> Executing = new HashSet<>();
+        TreeSet<Integer> Executing = new TreeSet<>();
 
         Scanner sc = new Scanner(System.in);
 
@@ -135,17 +133,27 @@ public class Main {
 
 
         int i =0;
-        while(iClockCycle<=4){ //change later   !Program.isEmpty()
+        while(true){
+            if(i>=Program.size() && isStationsEmpty(Tomasulo.LoadBuffers, Tomasulo.StoreBuffers, Tomasulo.AdderReservationStations, Tomasulo.MultiplierReservationStations)){
+                break;
+            }
             System.out.println("-------------------------------------------------------------------------");
             System.out.println("Cycle " + iClockCycle + ":" + "\n");
 
-            Instruction curInstruction = Program.get(i);
-            boolean canIssue = IssueInstruction(curInstruction, Tomasulo, i);
+
+
+            boolean canIssue = false;
+            if (i < Program.size()) {
+                Instruction curInstruction = Program.get(i);
+                canIssue = IssueInstruction(curInstruction, Tomasulo, i);
+            }
             HandleAdderStations(Tomasulo, Executing);
             HandleMultiplierStations(Tomasulo, Executing);
             HandleLoadBuffers(Tomasulo, Executing);
-            //todo handlestorebuffers
+            HandleStoreBuffers(Tomasulo, Executing);
+
             int writesResult = HandleWriteResult(Tomasulo, Executing);
+
 
             Display(Tomasulo, Program, writesResult, canIssue, i, Executing);
             if(canIssue)
@@ -154,7 +162,32 @@ public class Main {
         }
     }
 
-    private static void Display(Main Tomasulo, ArrayList<Instruction> Program, int InstructionIndex, boolean issued, int index, HashSet<Integer> Executing) {
+    //--------------------------------------------------------------------------------------------------
+
+    private static boolean isStationsEmpty(LoadBuffer[] loadBuffers, StoreBuffer[] storeBuffers, AdderReservationStation[] adderReservationStations, MultiplierReservationStation[] multiplierReservationStations) {
+        for (int i = 0; i < loadBuffers.length; i++) {
+            if(loadBuffers[i].isBusy())
+                return false;
+        }
+        for (int i = 0; i < storeBuffers.length; i++) {
+            if(storeBuffers[i].isBusy())
+                return false;
+        }
+        for (int i = 0; i < adderReservationStations.length; i++) {
+            if(adderReservationStations[i].isBusy())
+                return false;
+        }
+        for (int i = 0; i < multiplierReservationStations.length; i++) {
+            if(multiplierReservationStations[i].isBusy())
+                return false;
+        }
+        return true;
+    }
+
+
+    //--------------------------------------------------------------------------------------------------
+
+    private static void Display(Main Tomasulo, ArrayList<Instruction> Program, int InstructionIndex, boolean issued, int index, TreeSet<Integer> Executing) {
         System.out.println("Issued instruction: " );
         if(issued){
             System.out.println(Program.get(index).toString() + "\n");
@@ -259,6 +292,8 @@ public class Main {
                     }
                     curStation.setTotalCycles(Tomasulo.hmInstructionCycles.get(curInstruction.getType()));
                     curStation.setStartCycle(iClockCycle);
+                    Tomasulo.RegisterFile[curInstruction.getDestinationRegister()].setSourceReg(curStation.getTag());
+
                     break;
                 }
             }
@@ -270,6 +305,7 @@ public class Main {
                     canIssue = true;
                     curStation.setBusy(true);
                     curStation.setOpcode(curInstruction.getType());
+                    curStation.setInstructionIndex(index);
                     int iRegister1 = curInstruction.getSourceRegister1();
                     int iRegister2 = curInstruction.getSourceRegister2();
                     if(Tomasulo.RegisterFile[iRegister1].getSourceReg().equals("")){
@@ -286,6 +322,7 @@ public class Main {
                     }
                     curStation.setTotalCycles(Tomasulo.hmInstructionCycles.get(curInstruction.getType()));
                     curStation.setStartCycle(iClockCycle);
+                    Tomasulo.RegisterFile[curInstruction.getDestinationRegister()].setSourceReg(curStation.getTag());
                     break;
                 }
             }
@@ -299,6 +336,7 @@ public class Main {
                     curBuffer.setAddress(curInstruction.getImmediateValue());
                     curBuffer.setTotalCycles(Tomasulo.hmInstructionCycles.get(curInstruction.getType()));
                     curBuffer.setStartCycle(iClockCycle);
+                    Tomasulo.RegisterFile[curInstruction.getDestinationRegister()].setSourceReg(curBuffer.getTag());
                     break;
                 }
             }
@@ -319,11 +357,12 @@ public class Main {
                     }
                     curBuffer.setTotalCycles(Tomasulo.hmInstructionCycles.get(curInstruction.getType()));
                     curBuffer.setStartCycle(iClockCycle);
+                    Tomasulo.RegisterFile[curInstruction.getDestinationRegister()].setSourceReg(curBuffer.getTag());
                     break;
                 }
             }
         }
-        
+
         if (curInstruction.getType().equals("DADDI") || curInstruction.getType().equals("DSUBI") || curInstruction.getType().equals("BNEZ")){
             for(int i=0; i<Tomasulo.AdderReservationStations.length; i++){
                 AdderReservationStation curStation = Tomasulo.AdderReservationStations[i];
@@ -340,6 +379,9 @@ public class Main {
                     }
                     curStation.setSourceValue2(curInstruction.getImmediateValue());
                     curStation.setTotalCycles(Tomasulo.hmInstructionCycles.get(curInstruction.getType()));
+                    curStation.setStartCycle(iClockCycle);
+                    Tomasulo.RegisterFile[curInstruction.getDestinationRegister()].setSourceReg(curStation.getTag());
+
                 }
             }
         }
@@ -349,131 +391,85 @@ public class Main {
 
         return canIssue;
     }
-    
-    private static void HandleAdderStations(Main Tomasulo, HashSet<Integer> Executing) {
+
+    private static void HandleAdderStations(Main Tomasulo, TreeSet<Integer> Executing) {
         for (int i = 0; i < Tomasulo.AdderReservationStations.length; i++) {
             AdderReservationStation curStation = Tomasulo.AdderReservationStations[i];
             if (curStation.isBusy() && curStation.getStartCycle()!= iClockCycle) {
                 if (curStation.getSourceReg1().equals("") && curStation.getSourceReg2().equals("")) {
                     curStation.setTotalCycles(curStation.getTotalCycles() - 1);
                     if(!Executing.contains(curStation.getInstructionIndex()));
-                        Executing.add(curStation.getInstructionIndex());
+                    Executing.add(curStation.getInstructionIndex());
                     // changed condition to -1, write happens after the last cycle of execution and not
                     // in the same cycle
                     if (curStation.getTotalCycles() == -1) {
                         Tomasulo.WriteResult.add(curStation.getTag());
-//                        int result = 0;
-//                        if (curStation.getOpcode().equals("ADD.D")) {
-//                            result = curStation.getSourceValue1() + curStation.getSourceValue2();
-//                        } else if (curStation.getOpcode().equals("SUB.D")) {
-//                            result = curStation.getSourceValue1() - curStation.getSourceValue2();
-//                        }
-//                        for (int j = 0; j < Tomasulo.RegisterFile.length; j++){
-//                            if (Tomasulo.RegisterFile[j].getSourceReg().equals(curStation.getTag())) {
-//                                Tomasulo.RegisterFile[j].setSourceReg("");
-//                                Tomasulo.RegisterFile[j].setValue(result);
-//                            }
-//                        }
-//                        for (int j = 0; j < Tomasulo.AdderReservationStations.length; j++) {
-//                            if (Tomasulo.AdderReservationStations[j].getSourceReg1().equals(curStation.getTag())) {
-//                                Tomasulo.AdderReservationStations[j].setSourceValue1(result);
-//                                Tomasulo.AdderReservationStations[j].setSourceReg1("");
-//                            }
-//                            if (Tomasulo.AdderReservationStations[j].getSourceReg2().equals(curStation.getTag())) {
-//                                Tomasulo.AdderReservationStations[j].setSourceValue2(result);
-//                                Tomasulo.AdderReservationStations[j].setSourceReg2("");
-//                            }
-//                        }
-//                        for (int j = 0; j < Tomasulo.MultiplierReservationStations.length; j++) {
-//                            if (Tomasulo.MultiplierReservationStations[j].getSourceReg1().equals(curStation.getTag())) {
-//                                Tomasulo.MultiplierReservationStations[j].setSourceValue1(result);
-//                                Tomasulo.MultiplierReservationStations[j].setSourceReg1("");
-//                            }
-//                            if (Tomasulo.MultiplierReservationStations[j].getSourceReg2().equals(curStation.getTag())) {
-//                                Tomasulo.MultiplierReservationStations[j].setSourceValue2(result);
-//                                Tomasulo.MultiplierReservationStations[j].setSourceReg2("");
-//                            }
-//                        }
-//                        curStation.setBusy(false);
-//                        curStation.setSourceValue1(0);
-//                        curStation.setSourceValue2(0);
-//                        curStation.setSourceReg1("");
-//                        curStation.setSourceReg2("");
                     }
                 }
             }
         }
     }
 
-    private static void HandleMultiplierStations(Main Tomasulo, HashSet<Integer> Executing) {
+    private static void HandleMultiplierStations(Main Tomasulo, TreeSet<Integer> Executing) {
         for (int i = 0; i < Tomasulo.MultiplierReservationStations.length; i++) {
             MultiplierReservationStation curStation = Tomasulo.MultiplierReservationStations[i];
             if (curStation.isBusy() && curStation.getStartCycle()!= iClockCycle) {
                 if (curStation.getSourceReg1().equals("") && curStation.getSourceReg2().equals("")) {
                     if(!Executing.contains(curStation.getInstructionIndex()));
-                        Executing.add(curStation.getInstructionIndex());
+                    Executing.add(curStation.getInstructionIndex());
+                    System.out.println("here " + curStation.getInstructionIndex());
                     curStation.setTotalCycles(curStation.getTotalCycles() - 1);
                     if (curStation.getTotalCycles() == -1) {
                         Tomasulo.WriteResult.add(curStation.getTag());
-//                        int result = 0;
-//                        if (curStation.getOpcode().equals("MUL.D")) {
-//                            result = curStation.getSourceValue1() * curStation.getSourceValue2();
-//                        } else if (curStation.getOpcode().equals("DIV.D")) {
-//                            result = curStation.getSourceValue1() / curStation.getSourceValue2();
-//                        }
-//                        for (int j = 0; j < Tomasulo.RegisterFile.length; j++) {
-//                            if (Tomasulo.RegisterFile[j].getSourceReg().equals(curStation.getTag())) {
-//                                Tomasulo.RegisterFile[j].setSourceReg("");
-//                                Tomasulo.RegisterFile[j].setValue(result);
-//                            }
-//                        }
-//                        for (int j = 0; j < Tomasulo.AdderReservationStations.length; j++) {
-//                            if (Tomasulo.AdderReservationStations[j].getSourceReg1().equals(curStation.getTag())) {
-//                                Tomasulo.AdderReservationStations[j].setSourceValue1(result);
-//                                Tomasulo.AdderReservationStations[j].setSourceReg1("");
-//                            }
-//                            if (Tomasulo.AdderReservationStations[j].getSourceReg2().equals(curStation.getTag())) {
-//                                Tomasulo.AdderReservationStations[j].setSourceValue2(result);
-//                                Tomasulo.AdderReservationStations[j].setSourceReg2("");
-//                            }
-//                        }
-//                        for (int j = 0; j < Tomasulo.MultiplierReservationStations.length; j++) {
-//                            if (Tomasulo.MultiplierReservationStations[j].getSourceReg1().equals(curStation.getTag())) {
-//                                Tomasulo.MultiplierReservationStations[j].setSourceValue1(result);
-//                                Tomasulo.MultiplierReservationStations[j].setSourceReg1("");
-//                            }
-//                            if (Tomasulo.MultiplierReservationStations[j].getSourceReg2().equals(curStation.getTag())) {
-//                                Tomasulo.MultiplierReservationStations[j].setSourceValue2(result);
-//                                Tomasulo.MultiplierReservationStations[j].setSourceReg2("");
-//                            }
-//                        }
-//                        curStation.setBusy(false);
-//                        curStation.setSourceValue1(0);
-//                        curStation.setSourceValue2(0);
-//                        curStation.setSourceReg1("");
-//                        curStation.setSourceReg2("");
                     }
                 }
             }
         }
     }
 
-    private static void HandleLoadBuffers(Main Tomasulo, HashSet<Integer> Executing) {
+    private static void HandleLoadBuffers(Main Tomasulo, TreeSet<Integer> Executing) {
+        for (int i = 0; i < Tomasulo.LoadBuffers.length; i++) {
+            LoadBuffer curBuffer = Tomasulo.LoadBuffers[i];
+            if (curBuffer.isBusy() && curBuffer.getStartCycle()!= iClockCycle) {
+                curBuffer.setTotalCycles(curBuffer.getTotalCycles() - 1);
+                if(!Executing.contains(curBuffer.getInstructionIndex()));
+                Executing.add(curBuffer.getInstructionIndex());
+                if (curBuffer.getTotalCycles() == -1) {
+                    Tomasulo.WriteResult.add(curBuffer.getTag());
+                }
+            }
+        }
+
+    }
+    private static void HandleStoreBuffers(Main Tomasulo, TreeSet<Integer> Executing) {
+        for (int i = 0; i < Tomasulo.StoreBuffers.length; i++) {
+            StoreBuffer curBuffer = Tomasulo.StoreBuffers[i];
+            if (curBuffer.isBusy() && curBuffer.getStartCycle()!= iClockCycle) {
+                curBuffer.setTotalCycles(curBuffer.getTotalCycles() - 1);
+                if(!Executing.contains(curBuffer.getInstructionIndex()));
+                Executing.add(curBuffer.getInstructionIndex());
+                if (curBuffer.getTotalCycles() == -1) {
+                    Tomasulo.WriteResult.add(curBuffer.getTag());
+                }
+            }
+        }
 
     }
 
 
-    private static int HandleWriteResult(Main Tomasulo, HashSet<Integer> Executing) {
+    private static int HandleWriteResult(Main Tomasulo, TreeSet<Integer> Executing) {
         int iInstructionIndex=-1;
+        System.out.println("first time " + !Tomasulo.WriteResult.isEmpty());
         if(!Tomasulo.WriteResult.isEmpty()){
             String strTag = Tomasulo.WriteResult.poll();
             char cStation = strTag.charAt(0);
-            int result=0;
+            double result=0;
+            System.out.println("initial tag " + strTag.charAt(0));
 
             switch (cStation){
                 case 'A':
                 {
-                    AdderReservationStation curStation = Tomasulo.AdderReservationStations[Integer.parseInt(strTag.substring(1))-0];
+                    AdderReservationStation curStation = Tomasulo.AdderReservationStations[Integer.parseInt(strTag.substring(1))-1];
                     iInstructionIndex= curStation.getInstructionIndex();
                     if (curStation.getOpcode().equals("ADD.D")) {
                         result = curStation.getSourceValue1() + curStation.getSourceValue2();
@@ -490,7 +486,8 @@ public class Main {
                 break;
                 case 'M':
                 {
-                    MultiplierReservationStation curStation = Tomasulo.MultiplierReservationStations[Integer.parseInt(strTag.substring(1))-0];
+                    System.out.println("entered");
+                    MultiplierReservationStation curStation = Tomasulo.MultiplierReservationStations[Integer.parseInt(strTag.substring(1))-1];
                     iInstructionIndex= curStation.getInstructionIndex();
                     if (curStation.getOpcode().equals("MUL.D")) {
                         result = curStation.getSourceValue1() * curStation.getSourceValue2();
@@ -507,10 +504,25 @@ public class Main {
                 break;
                 case 'L':
                 {
+                    LoadBuffer curBuffer = Tomasulo.LoadBuffers[Integer.parseInt(strTag.substring(1))-1];
+                    iInstructionIndex= curBuffer.getInstructionIndex();
+                    result = Tomasulo.Cache[curBuffer.getAddress()];
+                    curBuffer.setBusy(false);
+                    curBuffer.setAddress(0);
+                    curBuffer.setInstructionIndex(-1);
+
                 }
                 break;
                 default: //case 'S'
                 {
+                    StoreBuffer curBuffer = Tomasulo.StoreBuffers[Integer.parseInt(strTag.substring(1))-1];
+                    iInstructionIndex= curBuffer.getInstructionIndex();
+                    result = curBuffer.getSourceValue();
+                    Tomasulo.Cache[curBuffer.getAddress()] = result;
+                    curBuffer.setBusy(false);
+                    curBuffer.setAddress(0);
+                    curBuffer.setSourceValue(0);
+                    curBuffer.setInstructionIndex(-1);
 
                 }
             }
@@ -541,9 +553,19 @@ public class Main {
                     Tomasulo.MultiplierReservationStations[j].setSourceReg2("");
                 }
             }
-            Executing.remove((Integer) iInstructionIndex);
+            for (int j = 0; j < Tomasulo.StoreBuffers.length; j++) {
+                if (Tomasulo.StoreBuffers[j].getSourceReg().equals(strTag)) {
+                    Tomasulo.StoreBuffers[j].setSourceValue(result);
+                    Tomasulo.StoreBuffers[j].setSourceReg("");
+                }
+            }
+
+            if (Executing.contains(iInstructionIndex))
+                 Executing.remove( iInstructionIndex);
+
         }
+
         return iInstructionIndex;
     }
-    
+
 }

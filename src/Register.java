@@ -1,7 +1,7 @@
 public class Register {
     private int iReg;
     private String iSourceReg; //Q
-    private int iValue;
+    private double iValue;
     public Register(int iReg, int iValue){
         this.iReg = iReg;
         this.iValue = iValue;
@@ -25,11 +25,11 @@ public class Register {
         this.iSourceReg = iSourceReg;
     }
 
-    public int getValue() {
+    public double getValue() {
         return iValue;
     }
 
-    public void setValue(int iValue) {
+    public void setValue(double iValue) {
         this.iValue = iValue;
     }
 }

@@ -2,8 +2,8 @@ public class ReservationStation {
     private String iTag;
     private boolean bBusy;
     private String strOpcode;
-    private int iSourceValue1; // Vj
-    private int iSourceValue2;// Vk
+    private double iSourceValue1; // Vj
+    private double iSourceValue2;// Vk
     private String iSourceReg1; //Qj
     private String iSourceReg2;  //Qk
     private int iMemoryAddress;
@@ -46,19 +46,19 @@ public class ReservationStation {
         this.strOpcode = strOpcode;
     }
 
-    public int getSourceValue1() {
+    public double getSourceValue1() {
         return iSourceValue1;
     }
 
-    public void setSourceValue1(int iSourceValue1) {
+    public void setSourceValue1(double iSourceValue1) {
         this.iSourceValue1 = iSourceValue1;
     }
 
-    public int getSourceValue2() {
+    public double getSourceValue2() {
         return iSourceValue2;
     }
 
-    public void setSourceValue2(int iSourceValue2) {
+    public void setSourceValue2(double iSourceValue2) {
         this.iSourceValue2 = iSourceValue2;
     }
 
