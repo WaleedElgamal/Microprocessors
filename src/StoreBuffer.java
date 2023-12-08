@@ -17,10 +17,11 @@ public class StoreBuffer {
     public StoreBuffer() {
         bBusy = false;
         iTag = "S" + count++;
+        iSourceReg = "";
     }
 
     public String toString(){
-        return iTag + " " + bBusy + "  " + iAddress;
+        return iTag + " " + bBusy + "    " + iAddress + "   " + iSourceValue + "   " + iSourceReg;
     }
 
     public String getTag() {

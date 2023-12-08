@@ -2,7 +2,6 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.math.BigInteger;
 import java.util.*;
 
 public class Main {
@@ -15,7 +14,7 @@ public class Main {
     private HashMap<String, Integer> hmInstructionCycles = new HashMap<>();
 
     static int iClockCycle = 1;
-//    private Queue<String> WriteResult = new LinkedList<>();
+    //    private Queue<String> WriteResult = new LinkedList<>();
     private PriorityQueue<String[]> WriteResult = new PriorityQueue<>(
             new Comparator<String[]>() {
                 public int compare(String[] o1, String[] o2) {
@@ -27,10 +26,13 @@ public class Main {
                         return 0;
                 }
             }
-);
+    );
 
     public Main() {
         Cache = new double[10]; //any size and also load with any values
+        for (int i = 0; i < Cache.length; i++) {
+            Cache[i] = i;
+        }
         RegisterFile = new Register[12];
         for (int i = 0; i < RegisterFile.length; i++) {
             RegisterFile[i] = new Register(i, i);
@@ -65,7 +67,7 @@ public class Main {
             Instruction newInstruction = new Instruction();
             String type = stValues[0];
             int dest = Integer.parseInt(stValues[1].substring(1));
-            ;
+
             if (type.equals("ADD.D") || type.equals("SUB.D") || type.equals("MUL.D") || type.equals("DIV.D")) {
                 int source1 = Integer.parseInt(stValues[2].substring(1));
                 int source2 = Integer.parseInt(stValues[3].substring(1));
@@ -209,7 +211,8 @@ public class Main {
 
         System.out.println("Executing instructions: ");
         for (Integer x : Executing) {
-            System.out.println(Program.get(x).toString());
+            if (x != -1)
+                System.out.println(Program.get(x).toString());
         }
         System.out.println();
 
@@ -234,7 +237,7 @@ public class Main {
         //--------------------------------------------------------------------------------------------------
 
         System.out.println("Store Buffers: ");
-        System.out.println("   Busy   Address");
+        System.out.println("   Busy   Address  V   Q");
         for (int i = 0; i < Tomasulo.StoreBuffers.length; i++) {
             System.out.println(Tomasulo.StoreBuffers[i]);
         }
@@ -281,6 +284,7 @@ public class Main {
                 AdderReservationStation curStation = Tomasulo.AdderReservationStations[i];
                 if (!curStation.isBusy()) {
                     canIssue = true;
+                    System.out.println("1");
                     curStation.setBusy(true);
                     curStation.setOpcode(curInstruction.getType());
                     curStation.setInstructionIndex(index);
@@ -308,6 +312,7 @@ public class Main {
                 MultiplierReservationStation curStation = Tomasulo.MultiplierReservationStations[i];
                 if (!curStation.isBusy()) {
                     canIssue = true;
+                    System.out.println("2");
                     curStation.setBusy(true);
                     curStation.setOpcode(curInstruction.getType());
                     curStation.setInstructionIndex(index);
@@ -334,7 +339,9 @@ public class Main {
                 LoadBuffer curBuffer = Tomasulo.LoadBuffers[i];
                 if (!curBuffer.isBusy()) {
                     canIssue = true;
+                    System.out.println("3");
                     curBuffer.setBusy(true);
+                    curBuffer.setInstructionIndex(index);
                     curBuffer.setAddress(curInstruction.getImmediateValue());
                     curBuffer.setTotalCycles(Tomasulo.hmInstructionCycles.get(curInstruction.getType()));
                     curBuffer.setStartCycle(iClockCycle);
@@ -347,9 +354,13 @@ public class Main {
                 StoreBuffer curBuffer = Tomasulo.StoreBuffers[i];
                 if (!curBuffer.isBusy()) {
                     canIssue = true;
+                    System.out.println("4");
                     curBuffer.setBusy(true);
+                    curBuffer.setInstructionIndex(index);
                     curBuffer.setAddress(curInstruction.getImmediateValue());
-                    int iRegister1 = curInstruction.getSourceRegister1();
+                    int iRegister1 = curInstruction.getDestinationRegister();
+                    System.out.println("iRegister1 " + iRegister1); // expected 4
+                    System.out.println(Tomasulo.RegisterFile[iRegister1].getSourceReg()); // expected M1
                     if (Tomasulo.RegisterFile[iRegister1].getSourceReg().equals("")) {
                         curBuffer.setSourceValue(Tomasulo.RegisterFile[iRegister1].getValue());
                     } else {
@@ -357,7 +368,6 @@ public class Main {
                     }
                     curBuffer.setTotalCycles(Tomasulo.hmInstructionCycles.get(curInstruction.getType()));
                     curBuffer.setStartCycle(iClockCycle);
-                    Tomasulo.RegisterFile[curInstruction.getDestinationRegister()].setSourceReg(curBuffer.getTag());
                     break;
                 }
             }
@@ -368,7 +378,9 @@ public class Main {
                 AdderReservationStation curStation = Tomasulo.AdderReservationStations[i];
                 if (!curStation.isBusy()) {
                     canIssue = true;
+                    System.out.println("5");
                     curStation.setBusy(true);
+                    curStation.setInstructionIndex(index);
                     curStation.setOpcode(curInstruction.getType());
                     int iRegister1 = curInstruction.getSourceRegister1();
                     if (Tomasulo.RegisterFile[iRegister1].getSourceReg().equals("")) {
@@ -395,7 +407,7 @@ public class Main {
             if (curStation.isBusy() && curStation.getStartCycle() != iClockCycle) {
                 if (curStation.getSourceReg1().equals("") && curStation.getSourceReg2().equals("")) {
                     curStation.setTotalCycles(curStation.getTotalCycles() - 1);
-                    if (!Executing.contains(curStation.getInstructionIndex())) ;
+                    System.out.println("here adder station " + curStation.getInstructionIndex());
                     Executing.add(curStation.getInstructionIndex());
                     // changed condition to -1, write happens after the last cycle of execution and not
                     // in the same cycle
@@ -414,9 +426,8 @@ public class Main {
             MultiplierReservationStation curStation = Tomasulo.MultiplierReservationStations[i];
             if (curStation.isBusy() && curStation.getStartCycle() != iClockCycle) {
                 if (curStation.getSourceReg1().equals("") && curStation.getSourceReg2().equals("")) {
-                    if (!Executing.contains(curStation.getInstructionIndex())) ;
+                    System.out.println("here mult station " + curStation.getInstructionIndex());
                     Executing.add(curStation.getInstructionIndex());
-                    System.out.println("here " + curStation.getInstructionIndex());
                     curStation.setTotalCycles(curStation.getTotalCycles() - 1);
                     if (curStation.getTotalCycles() == -1) {
                         Tomasulo.WriteResult.add(new String[]{curStation.getTag(), String.valueOf(curStation.getInstructionIndex())});
@@ -433,10 +444,10 @@ public class Main {
             LoadBuffer curBuffer = Tomasulo.LoadBuffers[i];
             if (curBuffer.isBusy() && curBuffer.getStartCycle() != iClockCycle) {
                 curBuffer.setTotalCycles(curBuffer.getTotalCycles() - 1);
-                if (!Executing.contains(curBuffer.getInstructionIndex())) ;
+                System.out.println("here load buffer " + curBuffer.getInstructionIndex());
                 Executing.add(curBuffer.getInstructionIndex());
                 if (curBuffer.getTotalCycles() == -1) {
-                    Tomasulo.WriteResult.add(new String[] {curBuffer.getTag(), String.valueOf(curBuffer.getInstructionIndex())});
+                    Tomasulo.WriteResult.add(new String[]{curBuffer.getTag(), String.valueOf(curBuffer.getInstructionIndex())});
                     Executing.remove(curBuffer.getInstructionIndex());
 
                 }
@@ -450,7 +461,7 @@ public class Main {
             StoreBuffer curBuffer = Tomasulo.StoreBuffers[i];
             if (curBuffer.isBusy() && curBuffer.getStartCycle() != iClockCycle) {
                 curBuffer.setTotalCycles(curBuffer.getTotalCycles() - 1);
-                if (!Executing.contains(curBuffer.getInstructionIndex())) ;
+                System.out.println("here store buffer " + curBuffer.getInstructionIndex());
                 Executing.add(curBuffer.getInstructionIndex());
                 if (curBuffer.getTotalCycles() == -1) {
                     Tomasulo.WriteResult.add(new String[]{curBuffer.getTag(), String.valueOf(curBuffer.getInstructionIndex())});

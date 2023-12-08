@@ -39,6 +39,12 @@ public class Instruction {
             res += register + "" +iDestinationRegister + " " +
                     iImmediateValue;
         }
+        else if (strType.equals("L.D") || strType.equals("S.D")){
+            register = 'F';
+            res += register + "" +iDestinationRegister + " " +
+
+                    iImmediateValue;
+        }
         else{
             register='F';
             res += register + ""  +iDestinationRegister + " " +
