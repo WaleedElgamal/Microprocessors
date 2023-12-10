@@ -17,7 +17,10 @@ public class Main {
 
     private static HashMap<String, Integer> hmLabels = new HashMap<>();
 
-    private static int i ;
+    private static int i;
+    private static boolean branchFlag = false;
+
+    private static int counter = 1;
 
 
     static int iClockCycle = 1;
@@ -70,13 +73,11 @@ public class Main {
     }
 
     public static void ParseProgram(ArrayList<Instruction> Program) throws IOException {
-        // todo use correct path for instruction file, use relative src/
         File file = new File("src/Program.txt");
         BufferedReader br = new BufferedReader(new FileReader(file));
         String st;
         int i = 1;
         while ((st = br.readLine()) != null) {
-            // todo print value after parsing
             String[] stValues = st.split(" ");
             for (int j = 0; j < stValues.length; j++) {
                 stValues[j] = stValues[j].toUpperCase();
@@ -97,13 +98,12 @@ public class Main {
                     int source1 = Integer.parseInt(stValues[2].substring(1));
                     int immediate = Integer.parseInt(stValues[3]);
                     newInstruction = new Instruction(type, dest, source1, immediate);
-                }
-                else if (type.equals("BNEZ")) {
+                } else if (type.equals("BNEZ")) {
                     String label = stValues[2];
                     newInstruction = new Instruction(type, dest, label);
                 }
             } else { // label
-                hmLabels.put(stValues[0], i-1);
+                hmLabels.put(stValues[0], i - 1);
                 String type = stValues[1];
                 int dest = Integer.parseInt(stValues[2].substring(1));
 
@@ -118,8 +118,7 @@ public class Main {
                     int source1 = Integer.parseInt(stValues[3].substring(1));
                     int immediate = Integer.parseInt(stValues[4]);
                     newInstruction = new Instruction(type, dest, source1, immediate);
-                }
-                else if (type.equals("BNEZ")) {
+                } else if (type.equals("BNEZ")) {
                     String label = stValues[2];
                     newInstruction = new Instruction(type, dest, label);
                 }
@@ -141,11 +140,9 @@ public class Main {
         ParseProgram(Program);
         TreeSet<Integer> Executing = new TreeSet<>();
         System.out.println(Program);
-        System.out.println(hmLabels);
 
         Scanner sc = new Scanner(System.in);
 
-        //todo initialize register file
 
         System.out.println("Choose the number of adder reservation stations");
         int iNumAdderStations = sc.nextInt();
@@ -194,11 +191,11 @@ public class Main {
         //--------------------------------------------------------------------------------------------------
 
 
-         i = 0;
+        i = 0;
         while (true) {
             if (i >= Program.size() && isStationsEmpty(Tomasulo.LoadBuffers, Tomasulo.StoreBuffers, Tomasulo.AdderReservationStations, Tomasulo.MultiplierReservationStations)) {
 
-                    break;
+                break;
 
             }
             System.out.println("-------------------------------------------------------------------------");
@@ -206,7 +203,7 @@ public class Main {
 
 
             boolean canIssue = false;
-            if (i < Program.size()) {
+            if (i < Program.size() && !branchFlag) {
                 Instruction curInstruction = Program.get(i);
                 canIssue = IssueInstruction(curInstruction, Tomasulo, i);
             }
@@ -255,7 +252,11 @@ public class Main {
         if (issued) {
             System.out.println(Program.get(index).toString() + "\n");
         } else {
-            System.out.println("No empty reservation station to issue instruction \n");
+            if (branchFlag || counter == 0) {
+                System.out.println("Waiting for the branch result \n");
+                counter = 1 ;
+            } else
+                System.out.println("No empty reservation station to issue instruction \n");
         }
 
         //--------------------------------------------------------------------------------------------------
@@ -342,7 +343,6 @@ public class Main {
                 AdderReservationStation curStation = Tomasulo.AdderReservationStations[i];
                 if (!curStation.isBusy()) {
                     canIssue = true;
-                    System.out.println("1");
                     curStation.setBusy(true);
                     curStation.setOpcode(curInstruction.getType());
                     curStation.setInstructionIndex(index);
@@ -370,7 +370,6 @@ public class Main {
                 MultiplierReservationStation curStation = Tomasulo.MultiplierReservationStations[i];
                 if (!curStation.isBusy()) {
                     canIssue = true;
-                    System.out.println("2");
                     curStation.setBusy(true);
                     curStation.setOpcode(curInstruction.getType());
                     curStation.setInstructionIndex(index);
@@ -397,7 +396,6 @@ public class Main {
                 LoadBuffer curBuffer = Tomasulo.LoadBuffers[i];
                 if (!curBuffer.isBusy()) {
                     canIssue = true;
-                    System.out.println("3");
                     curBuffer.setBusy(true);
                     curBuffer.setInstructionIndex(index);
                     curBuffer.setAddress(curInstruction.getImmediateValue());
@@ -412,13 +410,10 @@ public class Main {
                 StoreBuffer curBuffer = Tomasulo.StoreBuffers[i];
                 if (!curBuffer.isBusy()) {
                     canIssue = true;
-                    System.out.println("4");
                     curBuffer.setBusy(true);
                     curBuffer.setInstructionIndex(index);
                     curBuffer.setAddress(curInstruction.getImmediateValue());
                     int iRegister1 = curInstruction.getDestinationRegister();
-                    System.out.println("iRegister1 " + iRegister1); // expected 4
-                    System.out.println(Tomasulo.RegisterFile[iRegister1].getSourceReg()); // expected M1
                     if (Tomasulo.RegisterFile[iRegister1].getSourceReg().equals("")) {
                         curBuffer.setSourceValue(Tomasulo.RegisterFile[iRegister1].getValue());
                     } else {
@@ -431,12 +426,11 @@ public class Main {
             }
         }
 
-        if (curInstruction.getType().equals("ADDI") || curInstruction.getType().equals("SUBI") ) {
+        if (curInstruction.getType().equals("ADDI") || curInstruction.getType().equals("SUBI")) {
             for (int i = 0; i < Tomasulo.AdderReservationStations.length; i++) {
                 AdderReservationStation curStation = Tomasulo.AdderReservationStations[i];
                 if (!curStation.isBusy()) {
                     canIssue = true;
-                    System.out.println("5");
                     curStation.setBusy(true);
                     curStation.setInstructionIndex(index);
                     curStation.setOpcode(curInstruction.getType());
@@ -460,7 +454,7 @@ public class Main {
                 AdderReservationStation curStation = Tomasulo.AdderReservationStations[i];
                 if (!curStation.isBusy()) {
                     canIssue = true;
-                    System.out.println("6");
+                    branchFlag = true;
                     curStation.setBusy(true);
                     curStation.setInstructionIndex(index);
                     curStation.setOpcode(curInstruction.getType());
@@ -490,7 +484,6 @@ public class Main {
             if (curStation.isBusy() && curStation.getStartCycle() != iClockCycle) {
                 if (curStation.getSourceReg1().equals("") && curStation.getSourceReg2().equals("")) {
                     curStation.setTotalCycles(curStation.getTotalCycles() - 1);
-                    System.out.println("here adder station " + curStation.getInstructionIndex());
                     Executing.add(curStation.getInstructionIndex());
                     // changed condition to -1, write happens after the last cycle of execution and not
                     // in the same cycle
@@ -509,7 +502,6 @@ public class Main {
             MultiplierReservationStation curStation = Tomasulo.MultiplierReservationStations[i];
             if (curStation.isBusy() && curStation.getStartCycle() != iClockCycle) {
                 if (curStation.getSourceReg1().equals("") && curStation.getSourceReg2().equals("")) {
-                    System.out.println("here mult station " + curStation.getInstructionIndex());
                     Executing.add(curStation.getInstructionIndex());
                     curStation.setTotalCycles(curStation.getTotalCycles() - 1);
                     if (curStation.getTotalCycles() == -1) {
@@ -527,7 +519,6 @@ public class Main {
             LoadBuffer curBuffer = Tomasulo.LoadBuffers[i];
             if (curBuffer.isBusy() && curBuffer.getStartCycle() != iClockCycle) {
                 curBuffer.setTotalCycles(curBuffer.getTotalCycles() - 1);
-                System.out.println("here load buffer " + curBuffer.getInstructionIndex());
                 Executing.add(curBuffer.getInstructionIndex());
                 if (curBuffer.getTotalCycles() == -1) {
                     Tomasulo.WriteResult.add(new String[]{curBuffer.getTag(), String.valueOf(curBuffer.getInstructionIndex())});
@@ -544,7 +535,6 @@ public class Main {
             StoreBuffer curBuffer = Tomasulo.StoreBuffers[i];
             if (curBuffer.isBusy() && curBuffer.getStartCycle() != iClockCycle && curBuffer.getSourceReg().equals("")) {
                 curBuffer.setTotalCycles(curBuffer.getTotalCycles() - 1);
-                System.out.println("here store buffer " + curBuffer.getInstructionIndex());
                 Executing.add(curBuffer.getInstructionIndex());
                 if (curBuffer.getTotalCycles() == -1) {
                     Tomasulo.WriteResult.add(new String[]{curBuffer.getTag(), String.valueOf(curBuffer.getInstructionIndex())});
@@ -559,12 +549,10 @@ public class Main {
 
     private static int HandleWriteResult(Main Tomasulo, TreeSet<Integer> Executing) {
         int iInstructionIndex = -1;
-        System.out.println("first time " + !Tomasulo.WriteResult.isEmpty());
         if (!Tomasulo.WriteResult.isEmpty()) {
             String strTag = Tomasulo.WriteResult.poll()[0];
             char cStation = strTag.charAt(0);
             double result = 0;
-            System.out.println("initial tag " + strTag.charAt(0));
 
             switch (cStation) {
                 case 'A': {
@@ -574,14 +562,17 @@ public class Main {
                         result = curStation.getSourceValue1() + curStation.getSourceValue2();
                     } else if (curStation.getOpcode().equals("SUB.D") || curStation.getOpcode().equals("SUBI")) {
                         result = curStation.getSourceValue1() - curStation.getSourceValue2();
-                    }
-                    else if (curStation.getOpcode().equals("BNEZ")) {
+                    } else if (curStation.getOpcode().equals("BNEZ")) {
                         if (curStation.getSourceValue1() != 0) {
                             i = hmLabels.get(curStation.getLabel());
 
+
                         }
+                        branchFlag = false;
+                        counter--;
                     }
                     curStation.setBusy(false);
+                    curStation.setOpcode("");
                     curStation.setSourceValue1(0);
                     curStation.setSourceValue2(0);
                     curStation.setSourceReg1("");
@@ -590,7 +581,6 @@ public class Main {
                 }
                 break;
                 case 'M': {
-                    System.out.println("entered");
                     MultiplierReservationStation curStation = Tomasulo.MultiplierReservationStations[Integer.parseInt(strTag.substring(1)) - 1];
                     iInstructionIndex = curStation.getInstructionIndex();
                     if (curStation.getOpcode().equals("MUL.D")) {
@@ -599,6 +589,7 @@ public class Main {
                         result = curStation.getSourceValue1() / curStation.getSourceValue2();
                     }
                     curStation.setBusy(false);
+                    curStation.setOpcode("");
                     curStation.setSourceValue1(0);
                     curStation.setSourceValue2(0);
                     curStation.setSourceReg1("");
@@ -639,7 +630,7 @@ public class Main {
             for (int j = 0; j < Tomasulo.IntegerRegisterFile.length; j++) {
                 if (Tomasulo.IntegerRegisterFile[j].getSourceReg().equals(strTag)) {
                     Tomasulo.IntegerRegisterFile[j].setSourceReg("");
-                    Tomasulo.IntegerRegisterFile[j].setValue((int)result);
+                    Tomasulo.IntegerRegisterFile[j].setValue((int) result);
                 }
             }
 
