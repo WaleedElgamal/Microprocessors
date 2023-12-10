@@ -8,10 +8,17 @@ public class Main {
     private AdderReservationStation[] AdderReservationStations;
     private MultiplierReservationStation[] MultiplierReservationStations;
     private Register[] RegisterFile;
+
+    private IntegerRegister[] IntegerRegisterFile;
     private double[] Cache;
     private LoadBuffer[] LoadBuffers;
     private static StoreBuffer[] StoreBuffers;
     private HashMap<String, Integer> hmInstructionCycles = new HashMap<>();
+
+    private static HashMap<String, Integer> hmLabels = new HashMap<>();
+
+    private static int i ;
+
 
     static int iClockCycle = 1;
     //    private Queue<String> WriteResult = new LinkedList<>();
@@ -33,9 +40,13 @@ public class Main {
         for (int i = 0; i < Cache.length; i++) {
             Cache[i] = i;
         }
-        RegisterFile = new Register[12];
+        RegisterFile = new Register[32];
         for (int i = 0; i < RegisterFile.length; i++) {
             RegisterFile[i] = new Register(i, i);
+        }
+        IntegerRegisterFile = new IntegerRegister[32];
+        for (int i = 0; i < IntegerRegisterFile.length; i++) {
+            IntegerRegisterFile[i] = new IntegerRegister(i, i);
         }
 
         hmInstructionCycles.put("ADD.D", -1);
@@ -43,8 +54,8 @@ public class Main {
         hmInstructionCycles.put("MUL.D", -1);
         hmInstructionCycles.put("DIV.D", -1);
 
-        hmInstructionCycles.put("DADDI", 1); //specified
-        hmInstructionCycles.put("DSUBI", -1); //should be one as well?
+        hmInstructionCycles.put("ADDI", 1); //specified
+        hmInstructionCycles.put("SUBI", 1); //should be one as well ? yes
 
         hmInstructionCycles.put("L.D", -1);
         hmInstructionCycles.put("S.D", -1);
@@ -52,12 +63,18 @@ public class Main {
         hmInstructionCycles.put("BNEZ", 1); //specified
     }
 
+    public static boolean isInstruction(String str) {
+        return str.equals("ADD.D") || str.equals("SUB.D") || str.equals("MUL.D") || str.equals("DIV.D") ||
+                str.equals("ADDI") || str.equals("SUBI") || str.equals("L.D") || str.equals("S.D") ||
+                str.equals("BNEZ");
+    }
+
     public static void ParseProgram(ArrayList<Instruction> Program) throws IOException {
         // todo use correct path for instruction file, use relative src/
         File file = new File("src/Program.txt");
         BufferedReader br = new BufferedReader(new FileReader(file));
         String st;
-        int i = 0;
+        int i = 1;
         while ((st = br.readLine()) != null) {
             // todo print value after parsing
             String[] stValues = st.split(" ");
@@ -65,23 +82,53 @@ public class Main {
                 stValues[j] = stValues[j].toUpperCase();
             }
             Instruction newInstruction = new Instruction();
-            String type = stValues[0];
-            int dest = Integer.parseInt(stValues[1].substring(1));
+            if (isInstruction(stValues[0])) {
+                String type = stValues[0];
+                int dest = Integer.parseInt(stValues[1].substring(1));
 
-            if (type.equals("ADD.D") || type.equals("SUB.D") || type.equals("MUL.D") || type.equals("DIV.D")) {
-                int source1 = Integer.parseInt(stValues[2].substring(1));
-                int source2 = Integer.parseInt(stValues[3].substring(1));
-                newInstruction = new Instruction(type, dest, source1, source2);
-            } else if (type.equals("L.D") || type.equals("S.D") || type.equals("BNEZ")) {
-                int immediate = Integer.parseInt(stValues[2]);
-                newInstruction = new Instruction(type, dest, immediate);
-            } else if (type.equals("DADDI") || type.equals("DSUBI")) {
-                int source1 = Integer.parseInt(stValues[2].substring(1));
-                int immediate = Integer.parseInt(stValues[3]);
-                newInstruction = new Instruction(type, dest, source1, immediate);
+                if (type.equals("ADD.D") || type.equals("SUB.D") || type.equals("MUL.D") || type.equals("DIV.D")) {
+                    int source1 = Integer.parseInt(stValues[2].substring(1));
+                    int source2 = Integer.parseInt(stValues[3].substring(1));
+                    newInstruction = new Instruction(type, dest, source1, source2);
+                } else if (type.equals("L.D") || type.equals("S.D")) {
+                    int immediate = Integer.parseInt(stValues[2]);
+                    newInstruction = new Instruction(type, dest, immediate);
+                } else if (type.equals("ADDI") || type.equals("SUBI")) {
+                    int source1 = Integer.parseInt(stValues[2].substring(1));
+                    int immediate = Integer.parseInt(stValues[3]);
+                    newInstruction = new Instruction(type, dest, source1, immediate);
+                }
+                else if (type.equals("BNEZ")) {
+                    String label = stValues[2];
+                    newInstruction = new Instruction(type, dest, label);
+                }
+            } else { // label
+                hmLabels.put(stValues[0], i-1);
+                String type = stValues[1];
+                int dest = Integer.parseInt(stValues[2].substring(1));
+
+                if (type.equals("ADD.D") || type.equals("SUB.D") || type.equals("MUL.D") || type.equals("DIV.D")) {
+                    int source1 = Integer.parseInt(stValues[3].substring(1));
+                    int source2 = Integer.parseInt(stValues[4].substring(1));
+                    newInstruction = new Instruction(type, dest, source1, source2);
+                } else if (type.equals("L.D") || type.equals("S.D")) {
+                    int immediate = Integer.parseInt(stValues[3]);
+                    newInstruction = new Instruction(type, dest, immediate);
+                } else if (type.equals("ADDI") || type.equals("SUBI")) {
+                    int source1 = Integer.parseInt(stValues[3].substring(1));
+                    int immediate = Integer.parseInt(stValues[4]);
+                    newInstruction = new Instruction(type, dest, source1, immediate);
+                }
+                else if (type.equals("BNEZ")) {
+                    String label = stValues[2];
+                    newInstruction = new Instruction(type, dest, label);
+                }
+
+
             }
             Program.add(newInstruction);
             //System.out.println(newInstruction);
+            i++;
         }
         //numOfInstructions = i; // storing the number of instructions in instruction file
         // will be used to calculate number of clock cycles
@@ -93,6 +140,8 @@ public class Main {
         ArrayList<Instruction> Program = new ArrayList<>();
         ParseProgram(Program);
         TreeSet<Integer> Executing = new TreeSet<>();
+        System.out.println(Program);
+        System.out.println(hmLabels);
 
         Scanner sc = new Scanner(System.in);
 
@@ -135,7 +184,7 @@ public class Main {
 
 
         for (String strInstruction : Tomasulo.hmInstructionCycles.keySet()) {
-            if (!strInstruction.equals("DADDI") && !strInstruction.equals("BNEZ")) {
+            if (!strInstruction.equals("ADDI") && !strInstruction.equals("BNEZ") && !strInstruction.equals("SUBI")) {
                 System.out.println("Choose the latency of " + strInstruction + " instruction:");
                 int iLatency = sc.nextInt();
                 Tomasulo.hmInstructionCycles.replace(strInstruction, iLatency);
@@ -145,10 +194,12 @@ public class Main {
         //--------------------------------------------------------------------------------------------------
 
 
-        int i = 0;
+         i = 0;
         while (true) {
             if (i >= Program.size() && isStationsEmpty(Tomasulo.LoadBuffers, Tomasulo.StoreBuffers, Tomasulo.AdderReservationStations, Tomasulo.MultiplierReservationStations)) {
-                break;
+
+                    break;
+
             }
             System.out.println("-------------------------------------------------------------------------");
             System.out.println("Cycle " + iClockCycle + ":" + "\n");
@@ -269,9 +320,16 @@ public class Main {
 
         //--------------------------------------------------------------------------------------------------
 
-        System.out.println("Register File: ");
+        System.out.println("Floating Point Register File: ");
         for (int i = 0; i < Tomasulo.RegisterFile.length; i++) {
             System.out.println(Tomasulo.RegisterFile[i]);
+        }
+        System.out.println();
+
+        //--------------------------------------------------------------------------------------------------
+        System.out.println("Integer Register File: ");
+        for (int i = 0; i < Tomasulo.IntegerRegisterFile.length; i++) {
+            System.out.println(Tomasulo.IntegerRegisterFile[i]);
         }
         System.out.println();
     }
@@ -373,7 +431,7 @@ public class Main {
             }
         }
 
-        if (curInstruction.getType().equals("DADDI") || curInstruction.getType().equals("DSUBI") || curInstruction.getType().equals("BNEZ")) {
+        if (curInstruction.getType().equals("ADDI") || curInstruction.getType().equals("SUBI") ) {
             for (int i = 0; i < Tomasulo.AdderReservationStations.length; i++) {
                 AdderReservationStation curStation = Tomasulo.AdderReservationStations[i];
                 if (!curStation.isBusy()) {
@@ -383,16 +441,41 @@ public class Main {
                     curStation.setInstructionIndex(index);
                     curStation.setOpcode(curInstruction.getType());
                     int iRegister1 = curInstruction.getSourceRegister1();
-                    if (Tomasulo.RegisterFile[iRegister1].getSourceReg().equals("")) {
-                        curStation.setSourceValue1(Tomasulo.RegisterFile[iRegister1].getValue());
+                    if (Tomasulo.IntegerRegisterFile[iRegister1].getSourceReg().equals("")) {
+                        curStation.setSourceValue1(Tomasulo.IntegerRegisterFile[iRegister1].getValue());
                     } else {
-                        curStation.setSourceReg1(Tomasulo.RegisterFile[iRegister1].getSourceReg());
+                        curStation.setSourceReg1(Tomasulo.IntegerRegisterFile[iRegister1].getSourceReg());
                     }
                     curStation.setSourceValue2(curInstruction.getImmediateValue());
                     curStation.setTotalCycles(Tomasulo.hmInstructionCycles.get(curInstruction.getType()));
                     curStation.setStartCycle(iClockCycle);
-                    Tomasulo.RegisterFile[curInstruction.getDestinationRegister()].setSourceReg(curStation.getTag());
+                    Tomasulo.IntegerRegisterFile[curInstruction.getDestinationRegister()].setSourceReg(curStation.getTag());
+                    break;
+                }
+            }
+        }
 
+        if (curInstruction.getType().equals("BNEZ")) {
+            for (int i = 0; i < Tomasulo.AdderReservationStations.length; i++) {
+                AdderReservationStation curStation = Tomasulo.AdderReservationStations[i];
+                if (!curStation.isBusy()) {
+                    canIssue = true;
+                    System.out.println("6");
+                    curStation.setBusy(true);
+                    curStation.setInstructionIndex(index);
+                    curStation.setOpcode(curInstruction.getType());
+                    curStation.setLabel(curInstruction.getLabel());
+                    int iRegister1 = curInstruction.getDestinationRegister();
+                    if (Tomasulo.IntegerRegisterFile[iRegister1].getSourceReg().equals("")) {
+                        curStation.setSourceValue1(Tomasulo.IntegerRegisterFile[iRegister1].getValue());
+                    } else {
+                        curStation.setSourceReg1(Tomasulo.IntegerRegisterFile[iRegister1].getSourceReg());
+                    }
+//                    curStation.setSourceValue2(curInstruction.getImmediateValue());
+                    curStation.setTotalCycles(Tomasulo.hmInstructionCycles.get(curInstruction.getType()));
+                    curStation.setStartCycle(iClockCycle);
+//                    Tomasulo.IntegerRegisterFile[curInstruction.getDestinationRegister()].setSourceReg(curStation.getTag());
+                    break;
                 }
             }
         }
@@ -459,7 +542,7 @@ public class Main {
     private static void HandleStoreBuffers(Main Tomasulo, TreeSet<Integer> Executing) {
         for (int i = 0; i < Tomasulo.StoreBuffers.length; i++) {
             StoreBuffer curBuffer = Tomasulo.StoreBuffers[i];
-            if (curBuffer.isBusy() && curBuffer.getStartCycle() != iClockCycle) {
+            if (curBuffer.isBusy() && curBuffer.getStartCycle() != iClockCycle && curBuffer.getSourceReg().equals("")) {
                 curBuffer.setTotalCycles(curBuffer.getTotalCycles() - 1);
                 System.out.println("here store buffer " + curBuffer.getInstructionIndex());
                 Executing.add(curBuffer.getInstructionIndex());
@@ -487,10 +570,16 @@ public class Main {
                 case 'A': {
                     AdderReservationStation curStation = Tomasulo.AdderReservationStations[Integer.parseInt(strTag.substring(1)) - 1];
                     iInstructionIndex = curStation.getInstructionIndex();
-                    if (curStation.getOpcode().equals("ADD.D")) {
+                    if (curStation.getOpcode().equals("ADD.D") || curStation.getOpcode().equals("ADDI")) {
                         result = curStation.getSourceValue1() + curStation.getSourceValue2();
-                    } else if (curStation.getOpcode().equals("SUB.D")) {
+                    } else if (curStation.getOpcode().equals("SUB.D") || curStation.getOpcode().equals("SUBI")) {
                         result = curStation.getSourceValue1() - curStation.getSourceValue2();
+                    }
+                    else if (curStation.getOpcode().equals("BNEZ")) {
+                        if (curStation.getSourceValue1() != 0) {
+                            i = hmLabels.get(curStation.getLabel());
+
+                        }
                     }
                     curStation.setBusy(false);
                     curStation.setSourceValue1(0);
@@ -547,6 +636,13 @@ public class Main {
                     Tomasulo.RegisterFile[j].setValue(result);
                 }
             }
+            for (int j = 0; j < Tomasulo.IntegerRegisterFile.length; j++) {
+                if (Tomasulo.IntegerRegisterFile[j].getSourceReg().equals(strTag)) {
+                    Tomasulo.IntegerRegisterFile[j].setSourceReg("");
+                    Tomasulo.IntegerRegisterFile[j].setValue((int)result);
+                }
+            }
+
             for (int j = 0; j < Tomasulo.AdderReservationStations.length; j++) {
                 if (Tomasulo.AdderReservationStations[j].getSourceReg1().equals(strTag)) {
                     Tomasulo.AdderReservationStations[j].setSourceValue1(result);

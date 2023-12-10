@@ -14,6 +14,7 @@ public class ReservationStation {
 
     private int iTime;
 
+    private String label;
     public ReservationStation(){
         bBusy=false;
         iTag="";
@@ -116,5 +117,12 @@ public class ReservationStation {
 
     public void setInstructionIndex(int iInstructionIndex) {
         this.iInstructionIndex = iInstructionIndex;
+    }
+
+    public String getLabel() {
+        return label;
+    }
+    public void setLabel(String label) {
+        this.label = label;
     }
 }

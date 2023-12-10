@@ -5,6 +5,8 @@ public class Instruction {
     private int iSourceRegister2;
     private int iImmediateValue;
 
+    private String label;
+
     public Instruction(){
 
     }
@@ -14,7 +16,7 @@ public class Instruction {
         iSourceRegister1 = source1;
         iSourceRegister2 = source2;
 
-        //in case it is DADDI or DSUBI, source2 will be the immediate value
+        //in case it is ADDI or SUBI, source2 will be the immediate value
         iImmediateValue = source2;
     }
 
@@ -24,11 +26,17 @@ public class Instruction {
         iImmediateValue = immediate;
     }
 
+    public Instruction(String type, int dest, String label){
+        strType = type;
+        iDestinationRegister = dest;
+        this.label = label;
+    }
+
 
     public String toString(){
         String res =  strType +" ";
         char register;
-        if (strType.equals("DADDI") || strType.equals("DSUBI")){
+        if (strType.equals("ADDI") || strType.equals("SUBI")){
             register = 'R';
             res += register +  "" + iDestinationRegister + " " +
                     register + iSourceRegister1 + " " +
@@ -37,7 +45,7 @@ public class Instruction {
         else if (strType.equals("BNEZ")){
             register = 'R';
             res += register + "" +iDestinationRegister + " " +
-                    iImmediateValue;
+                    label;
         }
         else if (strType.equals("L.D") || strType.equals("S.D")){
             register = 'F';
@@ -92,5 +100,9 @@ public class Instruction {
 
     public void setImmediateValue(int iImmediateValue) {
         this.iImmediateValue = iImmediateValue;
+    }
+
+    public String getLabel() {
+        return label;
     }
 }
